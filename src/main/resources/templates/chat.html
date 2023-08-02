@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+<form id="message-form">
+    <input type="text" id="message-input" placeholder="Enter message" />
+    <button type="submit">Send</button>
+</form>
+<ul id="message-list"></ul>
+
+<!-- 웹 소켓 연결 시 chatRoomId 전달을 위한 JavaScript 코드 -->
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatRoomId = urlParams.get('chatRoomId'); // URL 쿼리 파라미터에서 chatRoomId 가져오기
+
+    // WebSocket 연결 함수
+    function connectToChat(chatRoomId) {
+        const socket = new SockJS('http://localhost:8085/ws');
+        const stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function(frame) {
+            // 채팅 메시지 전송 이벤트 리스너 등록
+            document.querySelector('#message-form').addEventListener('submit', event => {
+                event.preventDefault();
+                let messageContent = document.querySelector('#message-input').value.trim();
+                if (messageContent && stompClient) {
+                    let chatMessage = {
+                        chatRoomId: chatRoomId, // 클라이언트에서 설정한 채팅방 ID를 ChatMessageDto에 포함
+                        content: messageContent
+                    };
+                    stompClient.send("/app/chat", {}, JSON.stringify(chatMessage));
+                    document.querySelector('#message-input').value = '';
+                }
+            });
+        });
+    }
+
+    // 웹 소켓 연결 시 chatRoomId 전달
+    connectToChat(chatRoomId);
+
+</script>
+
+</body>
+</html>
